@@ -21,6 +21,7 @@
     "concurrently": "^9.2.1",
     "electron": "^38.0.0",
     "electron-builder": "^26.0.12",
+    "png-to-ico": "^3.0.1",
     "wait-on": "^8.0.5"
   },
   "build": {
@@ -31,11 +32,13 @@
     },
     "files": [
       "electron/**/*",
+      "build/**/*",
       "client/dist/**/*",
       "server/**/*",
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis"
       ]

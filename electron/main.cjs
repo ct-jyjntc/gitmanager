@@ -9,6 +9,14 @@ const serverPort = process.env.PORT || '3001';
 let mainWindow = null;
 let embeddedServer = null;
 
+function getAppIcon() {
+  if (isDev) {
+    return path.join(__dirname, '..', 'build', 'icon.ico');
+  }
+
+  return path.join(app.getAppPath(), 'build', 'icon.ico');
+}
+
 function getServerEntry() {
   if (isDev) {
     return path.join(__dirname, '..', 'server', 'index.js');
@@ -34,6 +42,7 @@ async function createWindow() {
     minWidth: 1200,
     minHeight: 825,
     title: 'GitM',
+    icon: getAppIcon(),
     backgroundColor: '#0c141d',
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
