@@ -87,7 +87,7 @@ export default function BranchManager({ api, currentBranch, onMessage, onRefresh
       <PanelHeader
         title={t('branch.title')}
         icon={<Network size={18} />}
-        meta={loading ? t('common.loading') : `${localBranches.length} local / ${remoteBranches.length} remote`}
+        meta={loading ? t('common.loading') : t('branch.countSummary', { local: localBranches.length, remote: remoteBranches.length })}
       />
 
       <FormRow>

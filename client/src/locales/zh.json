@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Git Manager",
+    "title": "GitM",
     "trackRepo": "当前仓库",
     "noRepo": "未选择 Git 仓库",
     "pathPlaceholder": "输入绝对路径",
@@ -9,14 +9,34 @@
     "initRepo": "初始化仓库",
     "cloneRepo": "克隆仓库",
     "repoTargetPath": "目标目录",
-    "repoCloneUrl": "仓库地址"
+    "repoCloneUrl": "仓库地址",
+    "desktopOnly": "当前前端仅支持电脑端使用，请使用电脑打开。"
+  },
+  "layout": {
+    "repositoryControl": "仓库控制",
+    "repository": "仓库",
+    "modules": "模块",
+    "workspaceView": "工作区视图",
+    "collapseSidebar": "收起侧边栏",
+    "expandSidebar": "展开侧边栏",
+    "toggleTheme": "切换主题"
+  },
+  "events": {
+    "title": "事件中心",
+    "clear": "清空",
+    "empty": "暂无最近操作"
   },
   "nav": {
     "workspace": "工作区",
+    "workspaceSubtitle": "暂存、恢复、差异",
     "log": "历史",
+    "logSubtitle": "提交与历史操作",
     "branches": "分支",
+    "branchesSubtitle": "本地与远程引用",
     "stash": "暂存栈",
-    "geek": "全量控制台"
+    "stashSubtitle": "临时搁置的改动",
+    "geek": "全量控制台",
+    "geekSubtitle": "完整 Git 操作面板"
   },
   "summary": {
     "branch": "当前分支",
@@ -43,6 +63,7 @@
     "restoreAllConfirm": "确定恢复全部已跟踪的未暂存改动吗？",
     "cleanUntrackedConfirm": "确定删除所有未跟踪文件和目录吗？",
     "amend": "追加到上一次提交 (--amend)",
+    "readyFiles": "已有 {{count}} 个文件待提交",
     "commitMsg": "输入提交信息",
     "commitBtn": "提交"
   },
@@ -57,13 +78,17 @@
     "warn_reset": "这会执行 hard reset，未保存改动可能丢失。确定继续？",
     "warn_revert": "将创建一个反向提交。确定继续？",
     "warn_cherryPick": "将把这个提交应用到当前分支。确定继续？",
-    "warn_tag": "将为该提交创建标签。确定继续？"
+    "warn_tag": "将为该提交创建标签。确定继续？",
+    "commitCount": "{{count}} 个提交",
+    "itemCount": "{{count}} 条记录"
   },
   "diff": {
     "title": "差异预览",
     "noFile": "选择一个文件查看差异。",
     "loading": "正在读取差异...",
-    "noDiff": "没有可显示的差异。"
+    "noDiff": "没有可显示的差异。",
+    "stagedPatch": "暂存区补丁",
+    "workingTreePatch": "工作区补丁"
   },
   "branch": {
     "title": "分支管理",
@@ -79,34 +104,39 @@
     "merge": "合并",
     "deleteConfirm": "确定删除分支 {{branch}} 吗？",
     "mergeConfirm": "确定把 {{branch}} 合并到当前分支吗？",
-    "noRemote": "没有远程分支。"
+    "noRemote": "没有远程分支。",
+    "countSummary": "本地 {{local}} / 远程 {{remote}}"
   },
   "stash": {
     "title": "暂存栈",
-    "save": "输入 stash 说明，可留空",
-    "btnSave": "保存到 Stash",
+    "save": "输入暂存说明，可留空",
+    "btnSave": "保存暂存",
     "apply": "应用",
     "drop": "删除",
-    "dropConfirm": "确定删除第 {{index}} 个 stash 吗？",
-    "empty": "当前没有 stash。"
+    "dropConfirm": "确定删除第 {{index}} 条暂存吗？",
+    "empty": "当前没有暂存记录。",
+    "entryLabel": "暂存 #{{index}}",
+    "entryCount": "{{count}} 条记录"
   },
   "geek": {
-    "title": "Git 全量控制台",
+    "title": "全量控制台",
     "currentBranch": "当前分支: {{branch}}",
     "remoteCount": "远程数量: {{count}}",
-    "fullCoverage": "专用面板 + 任意 git 子命令",
-    "reflogTitle": "Reflog",
-    "reflogDesc": "查看 HEAD 的移动历史，适合找回 reset 之后的提交。",
-    "loadReflog": "加载 Reflog",
+    "remotesLabel": "远程",
+    "stateLabel": "状态",
+    "fullCoverage": "专用面板与任意命令",
+    "reflogTitle": "引用日志",
+    "reflogDesc": "查看 HEAD 的移动历史，适合找回重置之后的提交。",
+    "loadReflog": "加载日志",
     "historyOps": "历史改写与恢复",
     "resetPlaceholder": "提交哈希或 HEAD",
-    "resetAction": "执行 Reset",
+    "resetAction": "执行重置",
     "resetWarn": "确定执行 {{mode}} {{commit}} 吗？这可能改写当前历史。",
-    "rebaseTitle": "Rebase 到目标分支",
+    "rebaseTitle": "变基到目标分支",
     "rebasePlaceholder": "输入目标分支名",
     "rebaseWarn": "Rebase 会改写提交历史，确认继续？",
-    "rebaseAction": "执行 Rebase",
-    "blameTitle": "文件 Blame",
+    "rebaseAction": "执行变基",
+    "blameTitle": "文件追溯",
     "blamePlaceholder": "输入相对文件路径",
     "blameAction": "查看",
     "tagsTitle": "标签管理",
@@ -124,10 +154,13 @@
     "remoteUrlPrompt": "为 {{name}} 输入新的远程地址",
     "deleteRemoteConfirm": "确定删除远程 {{name}} 吗？",
     "noRemotes": "当前没有远程。",
-    "commandTitle": "任意 Git 命令",
+    "commandTitle": "任意命令",
     "commandDesc": "直接输入 git 后面的参数，例如 status -sb、remote -v、show HEAD~1。",
     "commandPlaceholder": "例如: status -sb",
-    "commandRun": "运行"
+    "commandRun": "运行",
+    "noReflog": "尚未加载日志",
+    "noBlame": "暂无追溯输出",
+    "noCommandOutput": "暂无命令输出"
   },
   "feedback": {
     "repoChanged": "仓库已切换。",
@@ -153,9 +186,9 @@
     "branchDeleted": "分支 {{branch}} 已删除。",
     "checkoutDone": "已切换到 {{branch}}。",
     "mergeDone": "已尝试合并 {{branch}}。",
-    "stashSaved": "已保存到 stash。",
-    "stashPopped": "stash 已应用。",
-    "stashDropped": "stash 已删除。",
+    "stashSaved": "已保存到暂存栈。",
+    "stashPopped": "暂存已应用。",
+    "stashDropped": "暂存已删除。",
     "rebaseDone": "Rebase 命令已发起。",
     "remoteAdded": "远程已添加。",
     "remoteUpdated": "远程 {{name}} 已更新。",
@@ -164,6 +197,7 @@
   },
   "common": {
     "loading": "加载中...",
-    "noData": "暂无数据"
+    "noData": "暂无数据",
+    "ready": "就绪"
   }
 }

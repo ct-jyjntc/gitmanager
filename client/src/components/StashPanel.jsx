@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import PanelHeader from './ui/PanelHeader';
 import EmptyState from './ui/EmptyState';
 import FormRow from './ui/FormRow';
+import LoadingState from './ui/LoadingState';
 
 export default function StashPanel({ api, onMessage, onRefresh, refreshKey }) {
   const { t } = useTranslation();
@@ -67,12 +68,16 @@ export default function StashPanel({ api, onMessage, onRefresh, refreshKey }) {
   };
 
   if (!stashes) {
-    return <div className="glass-panel module-surface">{loading ? t('common.loading') : t('common.noData')}</div>;
+    return (
+      <div className="glass-panel module-surface">
+        {loading ? <LoadingState label={t('common.loading')} /> : t('common.noData')}
+      </div>
+    );
   }
 
   return (
     <div className="glass-panel module-surface">
-      <PanelHeader title={t('stash.title')} icon={<PackageOpen size={18} />} meta={`${stashes.length} entries`} />
+      <PanelHeader title={t('stash.title')} icon={<PackageOpen size={18} />} meta={t('stash.entryCount', { count: stashes.length })} />
 
       <FormRow>
         <input
@@ -89,7 +94,7 @@ export default function StashPanel({ api, onMessage, onRefresh, refreshKey }) {
         {stashes.map((stash, index) => (
           <div key={stash.hash || index} className="subpanel">
             <div className="panel-toolbar" style={{ marginBottom: '8px' }}>
-              <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent)' }}>stash@{`{${index}}`}</span>
+              <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent)' }}>{t('stash.entryLabel', { index })}</span>
               <span className="muted-copy">{stash.date}</span>
             </div>
             <div style={{ fontSize: '12px', marginBottom: '10px' }}>{stash.message}</div>

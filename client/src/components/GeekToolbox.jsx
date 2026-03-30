@@ -218,12 +218,12 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
             <strong>{branch || 'HEAD'}</strong>
           </div>
           <div className="geek-stat-card">
-            <span className="summary-label">Remotes</span>
+            <span className="summary-label">{t('geek.remotesLabel')}</span>
             <strong>{remoteCount}</strong>
           </div>
           <div className="geek-stat-card">
-            <span className="summary-label">State</span>
-            <strong>{loading ? t('common.loading') : 'Ready'}</strong>
+            <span className="summary-label">{t('geek.stateLabel')}</span>
+            <strong>{loading ? t('common.loading') : t('common.ready')}</strong>
           </div>
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
               <p className="panel-hint">{t('geek.reflogDesc')}</p>
               <button className="btn geek-ghost-accent" onClick={loadReflog}>{t('geek.loadReflog')}</button>
             </div>
-            {reflog ? <pre className="console-output geek-output compact-output">{reflog}</pre> : <div className="empty-console">No reflog loaded</div>}
+            {reflog ? <pre className="console-output geek-output compact-output">{reflog}</pre> : <div className="empty-console">{t('geek.noReflog')}</div>}
           </Section>
 
           <Section title={t('geek.blameTitle')} icon={<Navigation size={16} />} defaultOpen>
@@ -261,7 +261,7 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
               <input className="input-text" placeholder={t('geek.blamePlaceholder')} value={blameFile} onChange={(event) => setBlameFile(event.target.value)} />
               <button className="btn geek-action-btn geek-cool-btn" onClick={loadBlame}>{t('geek.blameAction')}</button>
             </div>
-            {blameText ? <pre className="console-output geek-output compact-output">{blameText}</pre> : <div className="empty-console">No blame output</div>}
+            {blameText ? <pre className="console-output geek-output compact-output">{blameText}</pre> : <div className="empty-console">{t('geek.noBlame')}</div>}
           </Section>
         </div>
 
@@ -321,7 +321,7 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
             <input className="input-text geek-command-input" placeholder={t('geek.commandPlaceholder')} value={commandInput} onChange={(event) => setCommandInput(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && runCommand()} />
             <button className="btn geek-action-btn" onClick={runCommand}>{t('geek.commandRun')}</button>
           </div>
-          {commandOutput ? <pre className="console-output geek-output geek-command-output">{commandOutput}</pre> : <div className="empty-console">No command output</div>}
+          {commandOutput ? <pre className="console-output geek-output geek-command-output">{commandOutput}</pre> : <div className="empty-console">{t('geek.noCommandOutput')}</div>}
         </Section>
       </div>
     </div>

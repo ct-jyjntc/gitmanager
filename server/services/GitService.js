@@ -50,7 +50,8 @@ export class GitService {
       throw error;
     }
 
-    return resolvedPath;
+    const repoRoot = await git.revparse(['--show-toplevel']);
+    return repoRoot.trim();
   }
 
   static async setRepoPath(newPath) {
@@ -137,7 +138,7 @@ export class GitService {
   }
 
   static async diffInfo(file) {
-    return withGit((git) => (file ? git.diff([file]) : git.diff()));
+    return withGit((git) => (file ? git.diff(['--', file]) : git.diff()));
   }
 
   static async diffStaged(file) {

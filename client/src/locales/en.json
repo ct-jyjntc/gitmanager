@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "Git Manager",
+    "title": "GitM",
     "trackRepo": "Current Repository",
     "noRepo": "No Git repository selected",
     "pathPlaceholder": "Enter an absolute path",
@@ -9,14 +9,34 @@
     "initRepo": "Init Repo",
     "cloneRepo": "Clone Repo",
     "repoTargetPath": "Target directory",
-    "repoCloneUrl": "Repository URL"
+    "repoCloneUrl": "Repository URL",
+    "desktopOnly": "This frontend is desktop-only. Please open it on a computer."
+  },
+  "layout": {
+    "repositoryControl": "Repository Control",
+    "repository": "Repository",
+    "modules": "Modules",
+    "workspaceView": "Workspace View",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "toggleTheme": "Toggle theme"
+  },
+  "events": {
+    "title": "Event Center",
+    "clear": "Clear",
+    "empty": "No recent events"
   },
   "nav": {
     "workspace": "Workspace",
+    "workspaceSubtitle": "Stage, restore, diff",
     "log": "History",
+    "logSubtitle": "Commits and history ops",
     "branches": "Branches",
+    "branchesSubtitle": "Local and remote refs",
     "stash": "Stash",
-    "geek": "Full Console"
+    "stashSubtitle": "Shelved work",
+    "geek": "Full Console",
+    "geekSubtitle": "Complete Git control surface"
   },
   "summary": {
     "branch": "Branch",
@@ -43,6 +63,7 @@
     "restoreAllConfirm": "Restore all tracked unstaged changes?",
     "cleanUntrackedConfirm": "Delete all untracked files and directories?",
     "amend": "Amend previous commit (--amend)",
+    "readyFiles": "{{count}} files ready to commit",
     "commitMsg": "Enter commit message",
     "commitBtn": "Commit"
   },
@@ -57,13 +78,17 @@
     "warn_reset": "This performs a hard reset and may discard local changes. Continue?",
     "warn_revert": "This will create a revert commit. Continue?",
     "warn_cherryPick": "This will apply the selected commit to the current branch. Continue?",
-    "warn_tag": "This will create a tag for the selected commit. Continue?"
+    "warn_tag": "This will create a tag for the selected commit. Continue?",
+    "commitCount": "{{count}} commits",
+    "itemCount": "{{count}} items"
   },
   "diff": {
     "title": "Diff Viewer",
     "noFile": "Select a file to inspect the diff.",
     "loading": "Loading diff...",
-    "noDiff": "No diff to display."
+    "noDiff": "No diff to display.",
+    "stagedPatch": "Staged patch",
+    "workingTreePatch": "Working tree patch"
   },
   "branch": {
     "title": "Branch Manager",
@@ -79,7 +104,8 @@
     "merge": "Merge",
     "deleteConfirm": "Delete branch {{branch}}?",
     "mergeConfirm": "Merge {{branch}} into the current branch?",
-    "noRemote": "No remote branches found."
+    "noRemote": "No remote branches found.",
+    "countSummary": "{{local}} local / {{remote}} remote"
   },
   "stash": {
     "title": "Stash Stack",
@@ -88,12 +114,15 @@
     "apply": "Apply",
     "drop": "Drop",
     "dropConfirm": "Drop stash entry #{{index}}?",
-    "empty": "No stash entries."
+    "empty": "No stash entries.",
+    "entryCount": "{{count}} entries"
   },
   "geek": {
     "title": "Full Git Console",
     "currentBranch": "Current branch: {{branch}}",
     "remoteCount": "Remote count: {{count}}",
+    "remotesLabel": "Remotes",
+    "stateLabel": "State",
     "fullCoverage": "Dedicated panels plus arbitrary git subcommands",
     "reflogTitle": "Reflog",
     "reflogDesc": "Inspect recent HEAD movements to recover commits after destructive operations.",
@@ -127,7 +156,10 @@
     "commandTitle": "Arbitrary Git Command",
     "commandDesc": "Type arguments after git, for example status -sb, remote -v, or show HEAD~1.",
     "commandPlaceholder": "Example: status -sb",
-    "commandRun": "Run"
+    "commandRun": "Run",
+    "noReflog": "No reflog loaded",
+    "noBlame": "No blame output",
+    "noCommandOutput": "No command output"
   },
   "feedback": {
     "repoChanged": "Repository changed.",
@@ -164,6 +196,7 @@
   },
   "common": {
     "loading": "Loading...",
-    "noData": "No data"
+    "noData": "No data",
+    "ready": "Ready"
   }
 }

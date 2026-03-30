@@ -96,11 +96,11 @@ export default function RepositoryPicker({ currentPath, onChange, api, onMessage
             setInputVal(currentPath);
           }}
           className="list-item"
-          style={{ padding: '10px', background: 'rgba(0,0,0,0.3)', wordBreak: 'break-all', fontSize: '12px', border: '1px solid var(--border-color)' }}
+          style={{ padding: '10px', background: 'var(--surface-muted)', wordBreak: 'break-all', fontSize: '12px', border: '1px solid var(--border-color)' }}
         >
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <FolderGit2 size={16} color="var(--accent)" />
-            <span style={{ color: '#fff' }}>{currentPath || t('app.noRepo')}</span>
+            <span style={{ color: 'var(--text-main)' }}>{currentPath || t('app.noRepo')}</span>
           </div>
         </div>
       ) : (

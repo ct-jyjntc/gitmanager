@@ -3,12 +3,12 @@ import { CopyPlus, GitCommit, RotateCcw, Tag, Undo2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PanelHeader from './ui/PanelHeader';
 import EmptyState from './ui/EmptyState';
+import LoadingState from './ui/LoadingState';
 
 export default function CommitHistory({ api, onMessage, onRefresh, refreshKey }) {
   const { t } = useTranslation();
   const [commits, setCommits] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [hoveredHash, setHoveredHash] = useState(null);
 
   useEffect(() => {
     fetchLog();
@@ -50,46 +50,40 @@ export default function CommitHistory({ api, onMessage, onRefresh, refreshKey })
   };
 
   return (
-    <div className="module-surface" style={{ padding: 0 }}>
+    <div className="module-surface commit-surface">
       <PanelHeader
         title={t('log.title')}
         icon={<GitCommit size={18} />}
-        meta={loading ? t('common.loading') : `${commits.length} commits`}
+        meta={loading ? t('common.loading') : t('log.commitCount', { count: commits.length })}
         className="history-panel-header"
       />
 
       {loading ? (
-        <p className="muted-copy">{t('log.loading')}</p>
+        <LoadingState label={t('log.loading')} />
       ) : commits.length === 0 ? (
         <EmptyState>{t('common.noData')}</EmptyState>
       ) : (
-        <div className="history-timeline">
-          {commits.map((commit, index) => (
-            <div
-              key={commit.hash}
-              className={`history-item ${hoveredHash === commit.hash ? 'history-item-active' : ''}`}
-              onMouseEnter={() => setHoveredHash(commit.hash)}
-              onMouseLeave={() => setHoveredHash(null)}
-            >
-              <div className="history-rail">
-                <div className="history-node">
-                  {commit.author_name ? commit.author_name.charAt(0).toUpperCase() : '?'}
-                </div>
-                {index !== commits.length - 1 && <div className="history-line" />}
-              </div>
+        <div className="commit-table-shell">
+          <div className="commit-table-head">
+            <span>{t('log.title')}</span>
+            <span>{t('log.itemCount', { count: commits.length })}</span>
+          </div>
 
-              <article className="history-card">
-                <div className="history-top">
-                  <div className="history-meta">
-                    <span className="history-author">{commit.author_name}</span>
-                    <span className="history-date">{new Date(commit.date).toLocaleString()}</span>
+          <div className="commit-list">
+            {commits.map((commit) => (
+              <article key={commit.hash} className="commit-row">
+                <div className="commit-main">
+                  <div className="commit-main-top">
+                    <div className="commit-message">{commit.message}</div>
+                    <span className="pill-hash">{commit.hash.substring(0, 7)}</span>
                   </div>
-                  <span className="pill-hash">{commit.hash.substring(0, 7)}</span>
+                  <div className="commit-meta">
+                    <span>{commit.author_name}</span>
+                    <span>{new Date(commit.date).toLocaleString()}</span>
+                  </div>
                 </div>
 
-                <div className="history-message">{commit.message}</div>
-
-                <div className="history-actions">
+                <div className="commit-actions">
                   <button className="btn btn-ghost history-action danger" onClick={() => executeAction('reset', commit.hash)}>
                     <RotateCcw size={14} />
                     {t('log.reset')}
@@ -108,8 +102,8 @@ export default function CommitHistory({ api, onMessage, onRefresh, refreshKey })
                   </button>
                 </div>
               </article>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
