@@ -175,6 +175,32 @@ textarea {
   line-height: 1.6;
 }
 
+.startup-card {
+  max-width: 460px;
+}
+
+.startup-button {
+  min-width: 220px;
+}
+
+.startup-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.startup-path {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-soft);
+  color: var(--text-main);
+  font-size: 12px;
+  word-break: break-all;
+}
+
 .btn {
   background: transparent;
   color: var(--accent);
@@ -313,6 +339,14 @@ textarea {
   border: 1px solid var(--border-color);
   color: var(--text-main);
   font-size: 10px;
+}
+
+.toolbar-path-chip {
+  justify-content: flex-start;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .layout-container.sidebar-collapsed {
@@ -1951,6 +1985,15 @@ textarea {
 .repo-mode-switch {
   display: flex;
   gap: 6px;
+}
+
+.repo-mode-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .toggle-row {

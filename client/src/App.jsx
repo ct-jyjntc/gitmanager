@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Cpu,
+  FolderOpen,
   GitBranch,
   Globe,
   LayoutDashboard,
@@ -50,6 +51,8 @@ function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [events, setEvents] = useState([]);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [startupCandidatePath, setStartupCandidatePath] = useState('');
+  const [startupNeedsInit, setStartupNeedsInit] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -91,14 +94,12 @@ function App() {
 
   const addEvent = (text, type = 'info') => {
     if (!text) return;
-
     const nextEvent = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       text,
       type,
       time: new Date().toLocaleTimeString(),
     };
-
     setEvents((current) => [nextEvent, ...current].slice(0, 30));
   };
 
@@ -110,10 +111,47 @@ function App() {
   };
 
   const handlePathChange = async (newPath) => {
-    await api.post('/path', { path: newPath });
-    setSelectedFile(null);
-    refreshAll();
-    showMessage(t('feedback.repoChanged'), 'success');
+    try {
+      await api.post('/path', { path: newPath });
+      setSelectedFile(null);
+      setStartupCandidatePath('');
+      setStartupNeedsInit(false);
+      refreshAll();
+      showMessage(t('feedback.repoChanged'), 'success');
+    } catch (error) {
+      const text = error.response?.data?.error || error.message;
+      if (/not a Git repository/i.test(text)) {
+        setStartupCandidatePath(newPath);
+        setStartupNeedsInit(true);
+        showMessage(t('feedback.notRepoSelected'), 'error');
+        return;
+      }
+      throw error;
+    }
+  };
+
+  const handlePickRepository = async () => {
+    try {
+      const { data } = await api.get('/pick-folder');
+      if (data.success && data.path) {
+        await handlePathChange(data.path);
+      }
+    } catch (error) {
+      showMessage(error.response?.data?.error || error.message, 'error');
+    }
+  };
+
+  const handleInitRepository = async () => {
+    if (!startupCandidatePath) return;
+    try {
+      await api.post('/repository', { action: 'init', path: startupCandidatePath });
+      setStartupNeedsInit(false);
+      setStartupCandidatePath('');
+      refreshAll();
+      showMessage(t('feedback.initDone'), 'success');
+    } catch (error) {
+      showMessage(error.response?.data?.error || error.message, 'error');
+    }
   };
 
   const toggleLanguage = () => {
@@ -139,6 +177,7 @@ function App() {
 
   const activeTabMeta = tabs.find((tab) => tab.id === activeTab) || tabs[0];
   const ActiveIcon = activeTabMeta.icon;
+  const hasRepository = Boolean(repoSummary?.path);
 
   if (isMobile) {
     return (
@@ -147,6 +186,30 @@ function App() {
           <LayoutDashboard size={28} color="var(--accent)" />
           <h1>{t('app.title')}</h1>
           <p>{t('app.desktopOnly')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasRepository) {
+    return (
+      <div className="desktop-only-screen">
+        <div className="desktop-only-card glass-panel startup-card">
+          <LayoutDashboard size={30} color="var(--accent)" />
+          <h1>{t('app.title')}</h1>
+          <p>{startupNeedsInit ? t('app.initPrompt') : t('app.startupPrompt')}</p>
+          {startupCandidatePath ? <div className="startup-path">{startupCandidatePath}</div> : null}
+          <div className="startup-actions">
+            <button className="btn btn-primary startup-button" onClick={handlePickRepository}>
+              <FolderOpen size={16} />
+              {t('app.pickFolder')}
+            </button>
+            {startupNeedsInit && (
+              <button className="btn startup-button" onClick={handleInitRepository}>
+                {t('app.initRepo')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -182,10 +245,12 @@ function App() {
             <Globe size={16} />
             {i18n.language.toUpperCase()}
           </button>
-            <button className="btn btn-ghost event-center-trigger" onClick={toggleEvents} aria-label={t('events.title')}>
-              <span className="event-count-badge">{events.length}</span>
-            </button>
-          <span className="toolbar-chip">{repoSummary?.path || t('app.noRepo')}</span>
+          <button className="btn btn-ghost event-center-trigger" onClick={toggleEvents} aria-label={t('events.title')}>
+            <span className="event-count-badge">{events.length}</span>
+          </button>
+          <button className="btn btn-ghost toolbar-chip toolbar-path-chip" onClick={handlePickRepository} title={t('app.pickFolder')}>
+            {repoSummary?.path || t('app.noRepo')}
+          </button>
           {repoSummary?.remotes?.length > 0 && (
             <span className="toolbar-chip">
               <Tags size={14} />
@@ -250,8 +315,6 @@ function App() {
 
               <RepositoryPicker
                 api={api}
-                currentPath={repoSummary?.path || ''}
-                onChange={handlePathChange}
                 onMessage={showMessage}
                 onRefresh={refreshAll}
               />

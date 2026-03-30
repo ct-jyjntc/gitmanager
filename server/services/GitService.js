@@ -2,9 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { simpleGit } from 'simple-git';
 
-let currentCwd = process.cwd();
+let currentCwd = null;
 
-const createGit = (baseDir = currentCwd) =>
+const createGit = (baseDir = process.cwd()) =>
   simpleGit({
     baseDir,
     binary: 'git',
@@ -15,17 +15,23 @@ const createGit = (baseDir = currentCwd) =>
 const normalizeRepoPath = (targetPath) => path.resolve(targetPath);
 
 const withGit = async (handler) => {
-  const git = createGit();
-  await GitService.ensureRepository();
+  const baseDir = await GitService.ensureRepository();
+  const git = createGit(baseDir);
   return handler(git);
 };
 
 export class GitService {
   static getRepoPath() {
-    return currentCwd;
+    return currentCwd || '';
   }
 
   static async ensureRepository(targetPath = currentCwd) {
+    if (!targetPath) {
+      const error = new Error('No repository selected');
+      error.statusCode = 400;
+      throw error;
+    }
+
     const resolvedPath = normalizeRepoPath(targetPath);
 
     if (!fs.existsSync(resolvedPath)) {
@@ -105,6 +111,19 @@ export class GitService {
   }
 
   static async getRepositorySummary() {
+    if (!currentCwd) {
+      return {
+        path: '',
+        branch: '',
+        isClean: true,
+        ahead: 0,
+        behind: 0,
+        remotes: [],
+        tagCount: 0,
+        selected: false,
+      };
+    }
+
     return withGit(async (git) => {
       const [status, branches, remotes, tags] = await Promise.all([
         git.status(),
@@ -121,6 +140,7 @@ export class GitService {
         behind: status.behind,
         remotes,
         tagCount: tags.all.length,
+        selected: true,
       };
     });
   }

@@ -78,8 +78,7 @@ router.get(
       return;
     }
 
-    const newPath = await GitService.setRepoPath(selectedPath);
-    res.json({ success: true, path: newPath });
+    res.json({ success: true, path: selectedPath });
   }),
 );
 

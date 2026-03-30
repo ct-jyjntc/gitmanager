@@ -10,7 +10,9 @@
     "cloneRepo": "Clone Repo",
     "repoTargetPath": "Target directory",
     "repoCloneUrl": "Repository URL",
-    "desktopOnly": "This frontend is desktop-only. Please open it on a computer."
+    "desktopOnly": "This frontend is desktop-only. Please open it on a computer.",
+    "startupPrompt": "Choose a Git repository folder to start using the app.",
+    "initPrompt": "This folder is not a Git repository yet. You can initialize it and continue."
   },
   "layout": {
     "repositoryControl": "Repository Control",
@@ -163,6 +165,7 @@
   },
   "feedback": {
     "repoChanged": "Repository changed.",
+    "notRepoSelected": "The selected folder is not a Git repository.",
     "initDone": "Repository initialized.",
     "cloneDone": "Repository cloned.",
     "fetchDone": "Fetch completed.",
