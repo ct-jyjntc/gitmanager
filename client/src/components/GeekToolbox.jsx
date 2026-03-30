@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ChevronDown,
+  FolderGit2,
   Globe2,
   History,
   Navigation,
@@ -40,6 +41,7 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
   const [newTag, setNewTag] = useState('');
   const [newTagCommit, setNewTagCommit] = useState('HEAD');
   const [remoteForm, setRemoteForm] = useState({ name: '', url: '' });
+  const [cloneForm, setCloneForm] = useState({ path: '', url: '' });
   const [resetForm, setResetForm] = useState({ mode: '--mixed', commit: 'HEAD' });
   const [commandInput, setCommandInput] = useState('');
   const [commandOutput, setCommandOutput] = useState('');
@@ -161,6 +163,22 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
     }
   };
 
+  const cloneRepository = async () => {
+    if (!cloneForm.path.trim() || !cloneForm.url.trim()) return;
+    try {
+      await api.post('/repository', {
+        action: 'clone',
+        path: cloneForm.path.trim(),
+        url: cloneForm.url.trim(),
+      });
+      setCloneForm({ path: '', url: '' });
+      onRefresh();
+      onMessage(t('feedback.cloneDone'), 'success');
+    } catch (error) {
+      reportError(error);
+    }
+  };
+
   const updateRemoteUrl = async (name, url) => {
     const nextUrl = window.prompt(t('geek.remoteUrlPrompt', { name }), url || '');
     if (!nextUrl?.trim()) return;
@@ -264,6 +282,14 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
             {blameText ? <pre className="console-output geek-output compact-output">{blameText}</pre> : <div className="empty-console">{t('geek.noBlame')}</div>}
           </Section>
         </div>
+
+        <Section title={t('geek.cloneTitle')} icon={<FolderGit2 size={16} />} defaultOpen>
+          <div className="control-row geek-control-row compact-controls">
+            <input className="input-text" placeholder={t('app.repoTargetPath')} value={cloneForm.path} onChange={(event) => setCloneForm((value) => ({ ...value, path: event.target.value }))} />
+            <input className="input-text" placeholder={t('app.repoCloneUrl')} value={cloneForm.url} onChange={(event) => setCloneForm((value) => ({ ...value, url: event.target.value }))} />
+            <button className="btn geek-action-btn" onClick={cloneRepository}>{t('app.cloneRepo')}</button>
+          </div>
+        </Section>
 
         <div className="geek-two-col">
           <Section title={t('geek.tagsTitle')} icon={<Tags size={16} />} count={tags.length} defaultOpen>

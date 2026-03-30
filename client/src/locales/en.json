@@ -137,6 +137,7 @@
     "rebasePlaceholder": "Enter target branch",
     "rebaseWarn": "Rebase rewrites history. Continue?",
     "rebaseAction": "Run Rebase",
+    "cloneTitle": "Clone Repository",
     "blameTitle": "File Blame",
     "blamePlaceholder": "Enter a relative file path",
     "blameAction": "Load Blame",
