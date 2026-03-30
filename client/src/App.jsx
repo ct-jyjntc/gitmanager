@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
   Activity,
-  Bell,
   CheckCircle2,
   CircleAlert,
   Cpu,
@@ -183,10 +182,9 @@ function App() {
             <Globe size={16} />
             {i18n.language.toUpperCase()}
           </button>
-          <button className="btn btn-ghost event-center-trigger" onClick={toggleEvents} aria-label={t('events.title')}>
-            <Bell size={16} />
-            {events.length > 0 && <span className="event-count-badge">{events.length}</span>}
-          </button>
+            <button className="btn btn-ghost event-center-trigger" onClick={toggleEvents} aria-label={t('events.title')}>
+              <span className="event-count-badge">{events.length}</span>
+            </button>
           <span className="toolbar-chip">{repoSummary?.path || t('app.noRepo')}</span>
           {repoSummary?.remotes?.length > 0 && (
             <span className="toolbar-chip">

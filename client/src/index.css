@@ -84,6 +84,14 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 
 html,
@@ -636,8 +644,8 @@ textarea {
   min-width: 32px;
   min-height: 32px;
   padding: 0;
-  border-color: rgba(125, 230, 210, 0.26);
-  background: var(--surface-soft);
+  border-color: var(--border-color);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
 }
 
 .event-count-badge {
@@ -648,8 +656,9 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
-  color: #102026;
+  background: var(--panel-bg-solid);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
   font-size: 10px;
   font-weight: 800;
 }

@@ -29,10 +29,10 @@ async function startEmbeddedServer() {
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    width: 1200,
+    height: 825,
     minWidth: 1200,
-    minHeight: 760,
+    minHeight: 825,
     title: 'GitM',
     backgroundColor: '#0c141d',
     autoHideMenuBar: true,
