@@ -27,7 +27,9 @@ import BranchManager from './components/BranchManager';
 import StashPanel from './components/StashPanel';
 import GeekToolbox from './components/GeekToolbox';
 
-const api = axios.create({ baseURL: 'http://localhost:3001/api/git' });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3001/api/git',
+});
 
 const tabs = [
   { id: 'status', icon: Activity, titleKey: 'nav.workspace', subtitleKey: 'nav.workspaceSubtitle' },
@@ -89,6 +91,8 @@ function App() {
   const refreshAll = () => setRefreshKey((value) => value + 1);
 
   const addEvent = (text, type = 'info') => {
+    if (!text) return;
+
     const nextEvent = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       text,
@@ -96,7 +100,7 @@ function App() {
       time: new Date().toLocaleTimeString(),
     };
 
-    setEvents((current) => [nextEvent, ...current].slice(0, 20));
+    setEvents((current) => [nextEvent, ...current].slice(0, 30));
   };
 
   const showMessage = (text, type = 'info') => {
@@ -150,238 +154,223 @@ function App() {
   }
 
   return (
-    <div className={`layout-container zashboard-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <aside className={`sidebar-column ${sidebarCollapsed ? 'sidebar-column-collapsed' : ''}`}>
-        {!sidebarCollapsed && (
-          <section className="glass-panel shell-card brand-card">
-            <div className="brand-row">
-            <div className="brand-block">
-              <h1 className="brand-title">
-                <LayoutDashboard size={18} color="var(--accent)" />
-                {t('app.title')}
-                </h1>
-              </div>
-              <div className="brand-actions">
-                <button className="btn btn-ghost sidebar-lang" title={t('layout.collapseSidebar')} onClick={toggleSidebar}>
-                  <PanelLeftClose size={16} />
-                </button>
-                <button className="btn btn-ghost sidebar-lang" title={t('layout.toggleTheme')} onClick={toggleTheme}>
-                  {theme === 'dark' ? <SunMedium size={16} /> : <MoonStar size={16} />}
-                </button>
-                <button className="btn btn-ghost sidebar-lang" title={t('app.toggleLanguage')} onClick={toggleLanguage}>
-                  <Globe size={16} /> {i18n.language.toUpperCase()}
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <header className="glass-panel native-toolbar desktop-titlebar">
+        <div className="toolbar-left no-drag">
+          <div className="toolbar-brand">
+            <LayoutDashboard size={18} color="var(--accent)" />
+            <span>{t('app.title')}</span>
+          </div>
+          <div className="toolbar-divider" />
+          <div className="toolbar-page">
+            <ActiveIcon size={18} />
+            <span>{t(activeTabMeta.titleKey)}</span>
+          </div>
+        </div>
 
-        {sidebarCollapsed && (
-          <section className="glass-panel shell-card brand-card">
-            <div className="brand-actions collapsed-brand-actions">
-              <button className="nav-tile nav-tile-active collapsed-expand-tile" title={t('layout.expandSidebar')} onClick={toggleSidebar}>
-                <span className="nav-icon-wrap">
-                  <PanelLeftOpen size={16} />
-                </span>
+        <div className="toolbar-right no-drag">
+          <button
+            className="btn btn-ghost topbar-tool-btn"
+            title={sidebarCollapsed ? t('layout.expandSidebar') : t('layout.collapseSidebar')}
+            onClick={toggleSidebar}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
+          <button className="btn btn-ghost topbar-tool-btn" title={t('layout.toggleTheme')} onClick={toggleTheme}>
+            {theme === 'dark' ? <SunMedium size={16} /> : <MoonStar size={16} />}
+          </button>
+          <button className="btn btn-ghost topbar-tool-btn topbar-lang-btn" title={t('app.toggleLanguage')} onClick={toggleLanguage}>
+            <Globe size={16} />
+            {i18n.language.toUpperCase()}
+          </button>
+          <button className="btn btn-ghost event-center-trigger" onClick={toggleEvents} aria-label={t('events.title')}>
+            <Bell size={16} />
+            {events.length > 0 && <span className="event-count-badge">{events.length}</span>}
+          </button>
+          <span className="toolbar-chip">{repoSummary?.path || t('app.noRepo')}</span>
+          {repoSummary?.remotes?.length > 0 && (
+            <span className="toolbar-chip">
+              <Tags size={14} />
+              {t('summary.remoteCount', { count: repoSummary.remotes.length })}
+            </span>
+          )}
+        </div>
+      </header>
+
+      {eventsOpen && (
+        <section className="glass-panel shell-card event-center-panel">
+          <div className="panel-toolbar">
+            <h3 className="subpanel-title" style={{ marginBottom: 0 }}>{t('events.title')}</h3>
+            <div className="action-row">
+              {events.length > 0 && (
+                <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={clearEvents}>
+                  {t('events.clear')}
+                </button>
+              )}
+              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={toggleEvents}>
+                ×
               </button>
             </div>
-          </section>
-        )}
-
-        {!sidebarCollapsed && (
-          <section className="glass-panel shell-card repo-card">
-            <div className="card-head">
-              <span className="card-kicker">{t('layout.repository')}</span>
-              <div className="repo-pill-row">
-                <div className="repo-pill">
-                  <GitBranch size={14} color="var(--green)" />
-                  <span>{repoSummary?.branch || 'HEAD'}</span>
-                </div>
-                <button className="btn btn-ghost repo-refresh" onClick={refreshAll} disabled={loadingSummary}>
-                  <RefreshCw size={14} className={loadingSummary ? 'spin' : ''} />
-                </button>
-              </div>
-            </div>
-
-            <RepositoryPicker
-              api={api}
-              currentPath={repoSummary?.path || ''}
-              onChange={handlePathChange}
-              onMessage={showMessage}
-              onRefresh={refreshAll}
-            />
-
-            {repoSummary && (
-              <div className="summary-grid">
-                <div className="summary-card summary-card-branch">
-                  <span className="summary-label">{t('summary.branch')}</span>
-                  <span className="summary-value">{repoSummary.branch || '-'}</span>
-                </div>
-                <div className="summary-card">
-                  <span className="summary-label">{t('summary.sync')}</span>
-                  <span className="summary-value">+{repoSummary.ahead ?? 0} / -{repoSummary.behind ?? 0}</span>
-                </div>
-                <div className="summary-card">
-                  <span className="summary-label">{t('summary.status')}</span>
-                  <span className="summary-value">{repoSummary.isClean ? t('summary.clean') : t('summary.dirty')}</span>
-                </div>
-                <div className="summary-card">
-                  <span className="summary-label">{t('summary.tags')}</span>
-                  <span className="summary-value">{repoSummary.tagCount ?? 0}</span>
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        <section className="glass-panel shell-card nav-card">
-          <div className="card-head">
-            <span className="card-kicker">{t('layout.modules')}</span>
           </div>
-          <nav className="sidebar-nav card-grid-nav">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
 
-              return (
-                <button
-                  key={tab.id}
-                  className={`nav-tile ${isActive ? 'nav-tile-active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  title={t(tab.titleKey)}
-                >
-                  <span className="nav-icon-wrap">
-                    <Icon size={16} />
+          <div className="event-center-list">
+            {events.length === 0 ? (
+              <div className="empty-state">{t('events.empty')}</div>
+            ) : (
+              events.map((event) => (
+                <div key={event.id} className={`event-row event-${event.type}`}>
+                  <span className="event-icon">
+                    {event.type === 'error' ? <CircleAlert size={14} /> : <CheckCircle2 size={14} />}
                   </span>
-                  {!sidebarCollapsed && (
-                    <span className="nav-copy">
-                      <strong>{t(tab.titleKey)}</strong>
-                      <small>{t(tab.subtitleKey)}</small>
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </section>
-      </aside>
-
-      <main className="main-content">
-        <header className="glass-panel shell-card page-top card-row">
-          <div className="page-title-block">
-            <h2 className="page-title">
-              <ActiveIcon size={18} />
-              {t(activeTabMeta.titleKey)}
-            </h2>
-          </div>
-
-          <div className="page-meta">
-            <button className="btn btn-ghost event-center-trigger" onClick={toggleEvents} aria-label={t('events.title')}>
-              <Bell size={16} />
-              {events.length > 0 && <span className="event-count-badge">{events.length}</span>}
-            </button>
-            <span className="page-meta-chip">{repoSummary?.path || t('app.noRepo')}</span>
-            {repoSummary?.remotes?.length > 0 && (
-              <span className="page-meta-chip">
-                <Tags size={14} />
-                {t('summary.remoteCount', { count: repoSummary.remotes.length })}
-              </span>
+                  <div className="event-copy">
+                    <div className="event-text">{event.text}</div>
+                    <div className="event-time">{event.time}</div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        </header>
+        </section>
+      )}
 
-        {eventsOpen && (
-          <section className="glass-panel shell-card event-center-panel">
-            <div className="panel-toolbar">
-              <h3 className="subpanel-title" style={{ marginBottom: 0 }}>{t('events.title')}</h3>
-              <div className="action-row">
-                {events.length > 0 && (
-                  <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={clearEvents}>
-                    {t('events.clear')}
-                  </button>
-                )}
-                <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={toggleEvents}>
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <div className="event-center-list">
-              {events.length === 0 ? (
-                <div className="empty-state">{t('events.empty')}</div>
-              ) : (
-                events.map((event) => (
-                  <div key={event.id} className={`event-row event-${event.type}`}>
-                    <span className="event-icon">
-                      {event.type === 'error' ? <CircleAlert size={14} /> : <CheckCircle2 size={14} />}
-                    </span>
-                    <div className="event-copy">
-                      <div className="event-text">{event.text}</div>
-                      <div className="event-time">{event.time}</div>
-                    </div>
+      <div className={`layout-container zashboard-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <aside className={`sidebar-column ${sidebarCollapsed ? 'sidebar-column-collapsed' : ''}`}>
+          {!sidebarCollapsed && (
+            <section className="glass-panel shell-card repo-card">
+              <div className="card-head">
+                <span className="card-kicker">{t('layout.repository')}</span>
+                <div className="repo-pill-row">
+                  <div className="repo-pill">
+                    <GitBranch size={14} color="var(--green)" />
+                    <span>{repoSummary?.branch || 'HEAD'}</span>
                   </div>
-                ))
-              )}
-            </div>
-          </section>
-        )}
+                  <button className="btn btn-ghost repo-refresh" onClick={refreshAll} disabled={loadingSummary}>
+                    <RefreshCw size={14} className={loadingSummary ? 'spin' : ''} />
+                  </button>
+                </div>
+              </div>
 
-        <section className="content-shell">
-          {activeTab === 'status' && (
-            <div className="workspace-stage-layout">
-              <div className="workspace-stage-column module-card">
-                <GitStatusPanel
+              <RepositoryPicker
+                api={api}
+                currentPath={repoSummary?.path || ''}
+                onChange={handlePathChange}
+                onMessage={showMessage}
+                onRefresh={refreshAll}
+              />
+
+              {repoSummary && (
+                <div className="summary-grid">
+                  <div className="summary-card summary-card-branch">
+                    <span className="summary-label">{t('summary.branch')}</span>
+                    <span className="summary-value">{repoSummary.branch || '-'}</span>
+                  </div>
+                  <div className="summary-card">
+                    <span className="summary-label">{t('summary.sync')}</span>
+                    <span className="summary-value">+{repoSummary.ahead ?? 0} / -{repoSummary.behind ?? 0}</span>
+                  </div>
+                  <div className="summary-card">
+                    <span className="summary-label">{t('summary.status')}</span>
+                    <span className="summary-value">{repoSummary.isClean ? t('summary.clean') : t('summary.dirty')}</span>
+                  </div>
+                  <div className="summary-card">
+                    <span className="summary-label">{t('summary.tags')}</span>
+                    <span className="summary-value">{repoSummary.tagCount ?? 0}</span>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          <section className="glass-panel shell-card nav-card">
+            <div className="card-head">
+              <span className="card-kicker">{t('layout.modules')}</span>
+            </div>
+            <nav className="sidebar-nav card-grid-nav">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    className={`nav-tile ${isActive ? 'nav-tile-active' : ''}`}
+                    onClick={() => setActiveTab(tab.id)}
+                    title={t(tab.titleKey)}
+                  >
+                    <span className="nav-icon-wrap">
+                      <Icon size={16} />
+                    </span>
+                    {!sidebarCollapsed && (
+                      <span className="nav-copy">
+                        <strong>{t(tab.titleKey)}</strong>
+                        <small>{t(tab.subtitleKey)}</small>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </section>
+        </aside>
+
+        <main className="main-content">
+          <section className="content-shell">
+            {activeTab === 'status' && (
+              <div className="workspace-stage-layout">
+                <div className="workspace-stage-column module-card">
+                  <GitStatusPanel
+                    api={api}
+                    key={`status-${refreshKey}`}
+                    onFileSelect={setSelectedFile}
+                    onMessage={showMessage}
+                    onRefresh={refreshAll}
+                  />
+                </div>
+                <div className="workspace-diff-column glass-panel module-card">
+                  <DiffViewer api={api} file={selectedFile} refreshKey={refreshKey} />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'branches' && (
+              <div className="module-card" style={{ flex: 1 }}>
+                <BranchManager
                   api={api}
-                  key={`status-${refreshKey}`}
-                  onFileSelect={setSelectedFile}
+                  currentBranch={repoSummary?.branch}
                   onMessage={showMessage}
                   onRefresh={refreshAll}
+                  refreshKey={refreshKey}
                 />
               </div>
-              <div className="workspace-diff-column glass-panel module-card">
-                <DiffViewer api={api} file={selectedFile} refreshKey={refreshKey} />
+            )}
+
+            {activeTab === 'log' && (
+              <div className="glass-panel page-panel module-card">
+                <CommitHistory api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'branches' && (
-            <div className="module-card" style={{ flex: 1 }}>
-              <BranchManager
-                api={api}
-                currentBranch={repoSummary?.branch}
-                onMessage={showMessage}
-                onRefresh={refreshAll}
-                refreshKey={refreshKey}
-              />
-            </div>
-          )}
+            {activeTab === 'stash' && (
+              <div className="module-card" style={{ flex: 1 }}>
+                <StashPanel api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
+              </div>
+            )}
 
-          {activeTab === 'log' && (
-            <div className="glass-panel page-panel module-card">
-              <CommitHistory api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
-            </div>
-          )}
-
-          {activeTab === 'stash' && (
-            <div className="module-card" style={{ flex: 1 }}>
-              <StashPanel api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
-            </div>
-          )}
-
-          {activeTab === 'geek' && (
-            <div className="module-card" style={{ flex: 1, minWidth: 0 }}>
-              <GeekToolbox
-                api={api}
-                onMessage={showMessage}
-                onRefresh={refreshAll}
-                branch={repoSummary?.branch}
-                remoteCount={repoSummary?.remotes?.length ?? 0}
-                refreshKey={refreshKey}
-              />
-            </div>
-          )}
-        </section>
-      </main>
+            {activeTab === 'geek' && (
+              <div className="module-card" style={{ flex: 1, minWidth: 0 }}>
+                <GeekToolbox
+                  api={api}
+                  onMessage={showMessage}
+                  onRefresh={refreshAll}
+                  branch={repoSummary?.branch}
+                  remoteCount={repoSummary?.remotes?.length ?? 0}
+                  refreshKey={refreshKey}
+                />
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
