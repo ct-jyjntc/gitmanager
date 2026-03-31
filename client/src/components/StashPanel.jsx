@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowDownCircle, PackageOpen, Save, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PanelHeader from './ui/PanelHeader';
@@ -12,11 +12,11 @@ export default function StashPanel({ api, onMessage, onRefresh, refreshKey }) {
   const [stashMsg, setStashMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const reportError = (error) => {
+  const reportError = useCallback((error) => {
     onMessage(error.response?.data?.error || error.message, 'error');
-  };
+  }, [onMessage]);
 
-  const fetchStash = async () => {
+  const fetchStash = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get('/stash');
@@ -26,11 +26,23 @@ export default function StashPanel({ api, onMessage, onRefresh, refreshKey }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, reportError]);
 
   useEffect(() => {
-    fetchStash();
-  }, [refreshKey]);
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get('/stash');
+        if (active) setStashes(data.all || []);
+      } catch (error) {
+        if (active) reportError(error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [api, reportError, refreshKey]);
 
   const save = async () => {
     try {

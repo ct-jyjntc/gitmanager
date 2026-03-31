@@ -17,20 +17,24 @@ export default function CommitHistory({ api, onMessage, onRefresh, refreshKey })
   const [activeFileDiff, setActiveFileDiff] = useState({});
 
   useEffect(() => {
-    fetchLog();
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get('/log');
+        if (active) setCommits(data.all || []);
+      } catch (error) {
+        if (active) onMessage(error.response?.data?.error || error.message, 'error');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+    // Re-fetch when the global refresh counter changes. `api` and `onMessage`
+    // are stable enough for this app's usage; listing them would cause extra
+    // fetches on every parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
-
-  const fetchLog = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get('/log');
-      setCommits(data.all || []);
-    } catch (error) {
-      onMessage(error.response?.data?.error || error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const executeAction = async (action, commit) => {
     const warnKey = `log.warn_${action}`;
@@ -48,13 +52,14 @@ export default function CommitHistory({ api, onMessage, onRefresh, refreshKey })
       }
 
       onRefresh();
-      fetchLog();
       onMessage(t(`feedback.${action}Done`), 'success');
     } catch (error) {
       onMessage(error.response?.data?.error || error.message, 'error');
     }
   };
 
+  // Fetch the file list for a commit, expanding its row. Results are cached so
+  // re-toggling the same commit doesn't refetch.
   const toggleCommit = async (commit) => {
     const nextExpanded = expandedCommit === commit.hash ? null : commit.hash;
     setExpandedCommit(nextExpanded);

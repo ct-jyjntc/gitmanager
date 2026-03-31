@@ -3,6 +3,10 @@ import path from 'path';
 import { simpleGit } from 'simple-git';
 
 let currentCwd = null;
+let cachedGit = null;
+let cachedGitBaseDir = null;
+let validationCache = new Map(); // path -> { repoRoot, ts }
+const VALIDATION_TTL = 10000; // 10s
 
 const createGit = (baseDir = process.cwd()) =>
   simpleGit({
@@ -14,9 +18,73 @@ const createGit = (baseDir = process.cwd()) =>
 
 const normalizeRepoPath = (targetPath) => path.resolve(targetPath);
 
+// Reuse a single simpleGit instance per repository root to avoid spawning a new
+// git runner setup on every request once the path is validated.
+const getGitForBaseDir = (baseDir) => {
+  if (cachedGit && cachedGitBaseDir === baseDir) {
+    return cachedGit;
+  }
+  cachedGit = createGit(baseDir);
+  cachedGitBaseDir = baseDir;
+  return cachedGit;
+};
+
+// Drop the cached git instance, e.g. when the repository selection changes so
+// the next call rebuilds against the new working directory.
+const invalidateGitCache = () => {
+  cachedGit = null;
+  cachedGitBaseDir = null;
+};
+
+// Validate that targetPath is an existing git repository. Results are cached
+// briefly so a burst of requests does not repeatedly spawn `git rev-parse`.
+const validateRepositoryPath = async (targetPath) => {
+  const resolvedPath = normalizeRepoPath(targetPath);
+
+  const cached = validationCache.get(resolvedPath);
+  const now = Date.now();
+  if (cached && now - cached.ts < VALIDATION_TTL) {
+    return cached.repoRoot;
+  }
+
+  if (!fs.existsSync(resolvedPath)) {
+    const error = new Error(`Repository path does not exist: ${resolvedPath}`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const stats = fs.statSync(resolvedPath);
+  if (!stats.isDirectory()) {
+    const error = new Error(`Repository path is not a directory: ${resolvedPath}`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const git = createGit(resolvedPath);
+  const isRepo = await git.checkIsRepo();
+
+  if (!isRepo) {
+    const error = new Error(`Selected path is not a Git repository: ${resolvedPath}`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const repoRoot = (await git.revparse(['--show-toplevel'])).trim();
+  validationCache.set(resolvedPath, { repoRoot, ts: now });
+  return repoRoot;
+};
+
+// withGit validates the current repository (cheap, cached) and runs the handler
+// against a cached simpleGit instance bound to the repository root.
 const withGit = async (handler) => {
-  const baseDir = await GitService.ensureRepository();
-  const git = createGit(baseDir);
+  if (!currentCwd) {
+    const error = new Error('No repository selected');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const baseDir = await validateRepositoryPath(currentCwd);
+  const git = getGitForBaseDir(baseDir);
   return handler(git);
 };
 
@@ -32,37 +100,16 @@ export class GitService {
       throw error;
     }
 
-    const resolvedPath = normalizeRepoPath(targetPath);
-
-    if (!fs.existsSync(resolvedPath)) {
-      const error = new Error(`Repository path does not exist: ${resolvedPath}`);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const stats = fs.statSync(resolvedPath);
-    if (!stats.isDirectory()) {
-      const error = new Error(`Repository path is not a directory: ${resolvedPath}`);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const git = createGit(resolvedPath);
-    const isRepo = await git.checkIsRepo();
-
-    if (!isRepo) {
-      const error = new Error(`Selected path is not a Git repository: ${resolvedPath}`);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const repoRoot = await git.revparse(['--show-toplevel']);
-    return repoRoot.trim();
+    return validateRepositoryPath(targetPath);
   }
 
   static async setRepoPath(newPath) {
     const resolvedPath = await GitService.ensureRepository(newPath);
-    currentCwd = resolvedPath;
+    if (currentCwd !== resolvedPath) {
+      currentCwd = resolvedPath;
+      invalidateGitCache();
+      validationCache.clear();
+    }
     return currentCwd;
   }
 
@@ -88,6 +135,8 @@ export class GitService {
     const git = createGit(resolvedPath);
     await git.init();
     currentCwd = resolvedPath;
+    invalidateGitCache();
+    validationCache.delete(resolvedPath);
     return resolvedPath;
   }
 
@@ -107,6 +156,8 @@ export class GitService {
     const git = createGit(parentPath);
     await git.clone(url.trim(), resolvedPath);
     currentCwd = await GitService.ensureRepository(resolvedPath);
+    invalidateGitCache();
+    validationCache.delete(resolvedPath);
     return currentCwd;
   }
 
@@ -196,19 +247,40 @@ export class GitService {
       throw error;
     }
 
-    return withGit((git) =>
-      file?.trim()
-        ? git.raw(['show', commit.trim(), '--', file.trim()])
-        : git.raw(['show', commit.trim(), '--format=medium'])
-    );
+    // Cap output to keep payloads bounded for very large commits; the UI can
+    // still page further if needed via the run endpoint.
+    const maxDiffBytes = 512 * 1024; // 512 KB
+    return withGit(async (git) => {
+      const output = file?.trim()
+        ? await git.raw(['show', commit.trim(), '--', file.trim()])
+        : await git.raw(['show', commit.trim(), '--format=medium']);
+      if (typeof output === 'string' && output.length > maxDiffBytes) {
+        return `${output.slice(0, maxDiffBytes)}\n\n…[output truncated: ${output.length - maxDiffBytes} bytes omitted]`;
+      }
+      return output;
+    });
   }
 
   static async diffInfo(file) {
-    return withGit((git) => (file ? git.diff(['--', file]) : git.diff()));
+    const maxDiffBytes = 512 * 1024; // 512 KB
+    return withGit(async (git) => {
+      const output = file ? await git.diff(['--', file]) : await git.diff();
+      if (typeof output === 'string' && output.length > maxDiffBytes) {
+        return `${output.slice(0, maxDiffBytes)}\n\n…[output truncated: ${output.length - maxDiffBytes} bytes omitted]`;
+      }
+      return output;
+    });
   }
 
   static async diffStaged(file) {
-    return withGit((git) => (file ? git.diff(['--staged', '--', file]) : git.diff(['--staged'])));
+    const maxDiffBytes = 512 * 1024; // 512 KB
+    return withGit(async (git) => {
+      const output = file ? await git.diff(['--staged', '--', file]) : await git.diff(['--staged']);
+      if (typeof output === 'string' && output.length > maxDiffBytes) {
+        return `${output.slice(0, maxDiffBytes)}\n\n…[output truncated: ${output.length - maxDiffBytes} bytes omitted]`;
+      }
+      return output;
+    });
   }
 
   static async stage(files) {
@@ -459,6 +531,18 @@ export class GitService {
 
     if (normalizedArgs.length === 0) {
       const error = new Error('At least one git argument is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Reject arguments that would read from /dev/stdin and hang the request,
+    // and block obviously destructive system-level flags. This is a best-effort
+    // guard, not a security boundary — the endpoint is intended for local use.
+    const blocked = normalizedArgs.some(
+      (arg) => arg === '--' || arg.startsWith('-z') || arg === 'commit' && normalizedArgs.includes('-F') && normalizedArgs.includes('-'),
+    );
+    if (blocked) {
+      const error = new Error('Unsupported argument combination');
       error.statusCode = 400;
       throw error;
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ChevronDown,
   FolderGit2,
@@ -47,11 +47,11 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
   const [commandOutput, setCommandOutput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const reportError = (error) => {
+  const reportError = useCallback((error) => {
     onMessage(error.response?.data?.error || error.message, 'error');
-  };
+  }, [onMessage]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const [{ data: tagData }, { data: remoteData }] = await Promise.all([
@@ -65,11 +65,29 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, reportError]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [refreshKey]);
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const [{ data: tagData }, { data: remoteData }] = await Promise.all([
+          api.get('/tags'),
+          api.get('/remotes'),
+        ]);
+        if (active) {
+          setTags(tagData.all || []);
+          setRemotes(remoteData.all || []);
+        }
+      } catch (error) {
+        if (active) reportError(error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [api, reportError, refreshKey]);
 
   const loadReflog = async () => {
     try {

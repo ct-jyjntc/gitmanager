@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   CheckCircle,
@@ -87,27 +87,39 @@ export default function GitStatusPanel({ api, onFileSelect, onMessage, onRefresh
   const [amendCommit, setAmendCommit] = useState(false);
   const [activeSection, setActiveSection] = useState('unstaged');
 
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
+
   const reportError = (error) => {
     onMessage(error.response?.data?.error || error.message, 'error');
   };
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
+    // Coalesce overlapping polls: a new status fetch is only started once the
+    // previous one has settled. This prevents request pile-up on slow repos.
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
       setLoading(true);
       const { data } = await api.get('/status');
-      setStatus(data);
+      if (mounted.current) setStatus(data);
     } catch (error) {
-      reportError(error);
+      if (mounted.current) onMessage(error.response?.data?.error || error.message, 'error');
     } finally {
-      setLoading(false);
+      if (mounted.current) setLoading(false);
+      inFlight.current = false;
     }
-  };
+  }, [api, onMessage]);
 
   useEffect(() => {
+    mounted.current = true;
     fetchStatus();
     const interval = setInterval(fetchStatus, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      mounted.current = false;
+      clearInterval(interval);
+    };
+  }, [fetchStatus]);
 
   const syncAfterChange = async (messageKey) => {
     await fetchStatus();

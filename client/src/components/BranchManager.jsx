@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GitMerge, Network, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PanelHeader from './ui/PanelHeader';
@@ -11,11 +11,11 @@ export default function BranchManager({ api, currentBranch, onMessage, onRefresh
   const [loading, setLoading] = useState(false);
   const [newBranch, setNewBranch] = useState('');
 
-  const reportError = (error) => {
+  const reportError = useCallback((error) => {
     onMessage(error.response?.data?.error || error.message, 'error');
-  };
+  }, [onMessage]);
 
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get('/branches');
@@ -25,11 +25,23 @@ export default function BranchManager({ api, currentBranch, onMessage, onRefresh
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, reportError]);
 
   useEffect(() => {
-    fetchBranches();
-  }, [currentBranch, refreshKey]);
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get('/branches');
+        if (active) setBranches(data);
+      } catch (error) {
+        if (active) reportError(error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [api, reportError, currentBranch, refreshKey]);
 
   const checkout = async (name) => {
     try {

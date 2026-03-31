@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useCallback, useState } from 'react';
 import axios from 'axios';
 import {
   Activity,
   CheckCircle2,
   CircleAlert,
   Cpu,
+  BookOpen,
   FolderOpen,
   GitBranch,
   Globe,
@@ -21,11 +22,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import RepositoryPicker from './components/RepositoryPicker';
 import GitStatusPanel from './components/GitStatusPanel';
-import CommitHistory from './components/CommitHistory';
 import DiffViewer from './components/DiffViewer';
-import BranchManager from './components/BranchManager';
-import StashPanel from './components/StashPanel';
-import GeekToolbox from './components/GeekToolbox';
+const BranchManager = lazy(() => import('./components/BranchManager'));
+const CommitHistory = lazy(() => import('./components/CommitHistory'));
+const StashPanel = lazy(() => import('./components/StashPanel'));
+const GeekToolbox = lazy(() => import('./components/GeekToolbox'));
+const GitDocsCenter = lazy(() => import('./components/GitDocsCenter'));
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3001/api/git',
@@ -37,6 +39,7 @@ const tabs = [
   { id: 'log', icon: GitBranch, titleKey: 'nav.log', subtitleKey: 'nav.logSubtitle' },
   { id: 'stash', icon: PackageOpen, titleKey: 'nav.stash', subtitleKey: 'nav.stashSubtitle' },
   { id: 'geek', icon: Cpu, titleKey: 'nav.geek', subtitleKey: 'nav.geekSubtitle' },
+  { id: 'docs', icon: BookOpen, titleKey: 'nav.docs', subtitleKey: 'nav.docsSubtitle' },
 ];
 
 function App() {
@@ -74,25 +77,9 @@ function App() {
     localStorage.setItem('gitmanager-sidebar-collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        setLoadingSummary(true);
-        const { data } = await api.get('/summary');
-        setRepoSummary(data);
-      } catch (error) {
-        showMessage(error.response?.data?.error || error.message, 'error');
-      } finally {
-        setLoadingSummary(false);
-      }
-    };
+  const refreshAll = useCallback(() => setRefreshKey((value) => value + 1), []);
 
-    run();
-  }, [refreshKey]);
-
-  const refreshAll = () => setRefreshKey((value) => value + 1);
-
-  const addEvent = (text, type = 'info') => {
+  const addEvent = useCallback((text, type = 'info') => {
     if (!text) return;
     const nextEvent = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -101,14 +88,32 @@ function App() {
       time: new Date().toLocaleTimeString(),
     };
     setEvents((current) => [nextEvent, ...current].slice(0, 30));
-  };
+  }, []);
 
-  const showMessage = (text, type = 'info') => {
+  const showMessage = useCallback((text, type = 'info') => {
     if (!text) return;
     addEvent(text, type);
     const logMethod = type === 'error' ? 'error' : 'log';
     console[logMethod](text);
-  };
+  }, [addEvent]);
+
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      try {
+        setLoadingSummary(true);
+        const { data } = await api.get('/summary');
+        if (active) setRepoSummary(data);
+      } catch (error) {
+        if (active) showMessage(error.response?.data?.error || error.message, 'error');
+      } finally {
+        if (active) setLoadingSummary(false);
+      }
+    };
+
+    run();
+    return () => { active = false; };
+  }, [refreshKey, showMessage]);
 
   const handlePathChange = async (newPath) => {
     try {
@@ -154,26 +159,26 @@ function App() {
     }
   };
 
-  const toggleLanguage = () => {
+  const toggleLanguage = useCallback(() => {
     const newLang = i18n.language === 'zh' ? 'en' : 'zh';
     i18n.changeLanguage(newLang);
-  };
+  }, [i18n]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme((value) => (value === 'dark' ? 'light' : 'dark'));
-  };
+  }, []);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((value) => !value);
-  };
+  }, []);
 
-  const toggleEvents = () => {
+  const toggleEvents = useCallback(() => {
     setEventsOpen((value) => !value);
-  };
+  }, []);
 
-  const clearEvents = () => {
+  const clearEvents = useCallback(() => {
     setEvents([]);
-  };
+  }, []);
 
   const activeTabMeta = tabs.find((tab) => tab.id === activeTab) || tabs[0];
   const ActiveIcon = activeTabMeta.icon;
@@ -393,38 +398,56 @@ function App() {
 
             {activeTab === 'branches' && (
               <div className="module-card" style={{ flex: 1 }}>
-                <BranchManager
-                  api={api}
-                  currentBranch={repoSummary?.branch}
-                  onMessage={showMessage}
-                  onRefresh={refreshAll}
-                  refreshKey={refreshKey}
-                />
+                <Suspense fallback={<div className="glass-panel module-surface">{t('common.loading')}</div>}>
+                  <BranchManager
+                    api={api}
+                    currentBranch={repoSummary?.branch}
+                    onMessage={showMessage}
+                    onRefresh={refreshAll}
+                    refreshKey={refreshKey}
+                  />
+                </Suspense>
               </div>
             )}
 
             {activeTab === 'log' && (
               <div className="glass-panel page-panel module-card">
-                <CommitHistory api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
+                <Suspense fallback={<div className="glass-panel module-surface">{t('common.loading')}</div>}>
+                  <CommitHistory api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
+                </Suspense>
               </div>
             )}
 
             {activeTab === 'stash' && (
               <div className="module-card" style={{ flex: 1 }}>
-                <StashPanel api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
+                <Suspense fallback={<div className="glass-panel module-surface">{t('common.loading')}</div>}>
+                  <StashPanel api={api} onMessage={showMessage} onRefresh={refreshAll} refreshKey={refreshKey} />
+                </Suspense>
               </div>
             )}
 
             {activeTab === 'geek' && (
               <div className="module-card" style={{ flex: 1, minWidth: 0 }}>
-                <GeekToolbox
-                  api={api}
-                  onMessage={showMessage}
-                  onRefresh={refreshAll}
-                  branch={repoSummary?.branch}
-                  remoteCount={repoSummary?.remotes?.length ?? 0}
-                  refreshKey={refreshKey}
-                />
+                <Suspense fallback={<div className="glass-panel module-surface">{t('common.loading')}</div>}>
+                  <GeekToolbox
+                    api={api}
+                    onMessage={showMessage}
+                    onRefresh={refreshAll}
+                    branch={repoSummary?.branch}
+                    remoteCount={repoSummary?.remotes?.length ?? 0}
+                    refreshKey={refreshKey}
+                  />
+                </Suspense>
+              </div>
+            )}
+
+            {activeTab === 'docs' && (
+              <div className="glass-panel page-panel module-card" style={{ flex: 1, minWidth: 0 }}>
+                <div className="docs-page-wrap">
+                  <Suspense fallback={<div className="glass-panel module-surface">{t('common.loading')}</div>}>
+                    <GitDocsCenter />
+                  </Suspense>
+                </div>
               </div>
             )}
           </section>

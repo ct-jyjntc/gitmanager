@@ -1,6 +1,6 @@
 const path = require('path');
 const { pathToFileURL } = require('url');
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 
 const isDev = !app.isPackaged;
 const rendererUrl = process.env.ELECTRON_RENDERER_URL || 'http://127.0.0.1:5173';
@@ -28,11 +28,30 @@ function getServerEntry() {
 async function startEmbeddedServer() {
   if (embeddedServer) return embeddedServer;
 
+  // If something is already listening on our port (e.g. a leftover dev server
+  // or a previous instance), skip starting the embedded server and reuse the
+  // existing one instead of crashing the whole app with EADDRINUSE.
+  const isPortFree = await checkPortAvailable(serverPort);
+  if (!isPortFree) {
+    console.warn(`Port ${serverPort} already in use — reusing existing server, embedded server not started.`);
+    return null;
+  }
+
   const serverEntry = getServerEntry();
   const moduleUrl = pathToFileURL(serverEntry).href;
   const serverModule = await import(moduleUrl);
   embeddedServer = serverModule.startServer(serverPort);
   return embeddedServer;
+}
+
+// Returns true if the given TCP port is free to bind, false otherwise.
+function checkPortAvailable(port) {
+  return new Promise((resolve) => {
+    const tester = require('net').createServer();
+    tester.once('error', () => resolve(false));
+    tester.once('listening', () => tester.close(() => resolve(true)));
+    tester.listen(port);
+  });
 }
 
 async function createWindow() {
@@ -54,7 +73,17 @@ async function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      spellcheck: false,
     },
+  });
+
+  // Open external links in the user's browser, not inside the app window.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) {
+      shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
   });
 
   if (isDev) {
@@ -67,7 +96,11 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await startEmbeddedServer();
+  try {
+    await startEmbeddedServer();
+  } catch (error) {
+    console.error('Failed to start embedded server:', error);
+  }
   await createWindow();
 
   app.on('activate', async () => {
