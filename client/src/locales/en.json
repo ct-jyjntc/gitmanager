@@ -38,7 +38,17 @@
     "stash": "Stash",
     "stashSubtitle": "Shelved work",
     "geek": "Full Console",
-    "geekSubtitle": "Complete Git control surface"
+    "geekSubtitle": "Complete Git control surface",
+    "docs": "Docs",
+    "docsSubtitle": "Git command tutorials"
+  },
+  "docs": {
+    "title": "Git Docs",
+    "description": "Search and browse Git commands by category. This page is meant to be a practical handbook inside the app.",
+    "searchPlaceholder": "Search command name or description",
+    "noMatch": "No commands matched your search.",
+    "examples": "Examples",
+    "commandCount": "{{count}} commands"
   },
   "summary": {
     "branch": "Branch",

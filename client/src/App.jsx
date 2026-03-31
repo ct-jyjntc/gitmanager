@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Cpu,
+  BookOpen,
   FolderOpen,
   GitBranch,
   Globe,
@@ -26,6 +27,7 @@ import DiffViewer from './components/DiffViewer';
 import BranchManager from './components/BranchManager';
 import StashPanel from './components/StashPanel';
 import GeekToolbox from './components/GeekToolbox';
+import GitDocsCenter from './components/GitDocsCenter';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3001/api/git',
@@ -37,6 +39,7 @@ const tabs = [
   { id: 'log', icon: GitBranch, titleKey: 'nav.log', subtitleKey: 'nav.logSubtitle' },
   { id: 'stash', icon: PackageOpen, titleKey: 'nav.stash', subtitleKey: 'nav.stashSubtitle' },
   { id: 'geek', icon: Cpu, titleKey: 'nav.geek', subtitleKey: 'nav.geekSubtitle' },
+  { id: 'docs', icon: BookOpen, titleKey: 'nav.docs', subtitleKey: 'nav.docsSubtitle' },
 ];
 
 function App() {
@@ -425,6 +428,14 @@ function App() {
                   remoteCount={repoSummary?.remotes?.length ?? 0}
                   refreshKey={refreshKey}
                 />
+              </div>
+            )}
+
+            {activeTab === 'docs' && (
+              <div className="glass-panel page-panel module-card" style={{ flex: 1, minWidth: 0 }}>
+                <div className="docs-page-wrap">
+                  <GitDocsCenter />
+                </div>
               </div>
             )}
           </section>
