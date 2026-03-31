@@ -98,6 +98,20 @@ router.get(
 );
 
 router.get(
+  '/commit-files',
+  asyncHandler(async (req, res) => {
+    res.json({ files: await GitService.commitFiles(req.query.commit) });
+  }),
+);
+
+router.get(
+  '/commit-diff',
+  asyncHandler(async (req, res) => {
+    res.json({ diff: await GitService.commitDiff(req.query.commit, req.query.file) });
+  }),
+);
+
+router.get(
   '/branches',
   asyncHandler(async (req, res) => {
     res.json(await GitService.branches());
@@ -159,6 +173,14 @@ router.post(
   '/checkout',
   asyncHandler(async (req, res) => {
     const response = await GitService.checkout(req.body.target);
+    res.json({ success: true, response });
+  }),
+);
+
+router.post(
+  '/checkout-file',
+  asyncHandler(async (req, res) => {
+    const response = await GitService.checkoutFileFromCommit(req.body.commit, req.body.file);
     res.json({ success: true, response });
   }),
 );

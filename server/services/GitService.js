@@ -157,6 +157,52 @@ export class GitService {
     return withGit((git) => git.log({ maxCount }));
   }
 
+  static async commitFiles(commit) {
+    if (!commit?.trim()) {
+      const error = new Error('Commit hash is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return withGit(async (git) => {
+      const output = await git.raw(['show', '--format=', '--name-status', '--find-renames', commit.trim()]);
+      return output
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const parts = line.split('\t');
+          const status = parts[0];
+          if (status.startsWith('R')) {
+            return {
+              status: 'R',
+              previousPath: parts[1],
+              path: parts[2],
+            };
+          }
+
+          return {
+            status,
+            path: parts[1],
+          };
+        });
+    });
+  }
+
+  static async commitDiff(commit, file) {
+    if (!commit?.trim()) {
+      const error = new Error('Commit hash is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return withGit((git) =>
+      file?.trim()
+        ? git.raw(['show', commit.trim(), '--', file.trim()])
+        : git.raw(['show', commit.trim(), '--format=medium'])
+    );
+  }
+
   static async diffInfo(file) {
     return withGit((git) => (file ? git.diff(['--', file]) : git.diff()));
   }
@@ -215,6 +261,16 @@ export class GitService {
     }
 
     return withGit((git) => git.checkout(branchOrFile.trim()));
+  }
+
+  static async checkoutFileFromCommit(commit, file) {
+    if (!commit?.trim() || !file?.trim()) {
+      const error = new Error('Commit hash and file path are required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    return withGit((git) => git.raw(['checkout', commit.trim(), '--', file.trim()]));
   }
 
   static async branches() {

@@ -270,9 +270,7 @@ function App() {
                   {t('events.clear')}
                 </button>
               )}
-              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={toggleEvents}>
-                ×
-              </button>
+              <button className="btn btn-ghost" style={{ padding: '4px 8px' }} onClick={toggleEvents}>?</button>
             </div>
           </div>
 
