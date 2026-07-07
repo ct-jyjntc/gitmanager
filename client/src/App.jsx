@@ -450,6 +450,14 @@ function App() {
                 </div>
               </div>
             )}
+
+            {activeTab === 'docs' && (
+              <div className="glass-panel page-panel module-card" style={{ flex: 1, minWidth: 0 }}>
+                <div className="docs-page-wrap">
+                  <GitDocsCenter />
+                </div>
+              </div>
+            )}
           </section>
         </main>
       </div>
