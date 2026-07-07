@@ -109,7 +109,8 @@
     "loading": "正在读取差异...",
     "noDiff": "没有可显示的差异。",
     "stagedPatch": "暂存区补丁",
-    "workingTreePatch": "工作区补丁"
+    "workingTreePatch": "工作区补丁",
+    "truncated": "仅显示前 {{shown}} / {{total}} 行（内容已截断）"
   },
   "branch": {
     "title": "分支管理",

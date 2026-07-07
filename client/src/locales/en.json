@@ -109,7 +109,8 @@
     "loading": "Loading diff...",
     "noDiff": "No diff to display.",
     "stagedPatch": "Staged patch",
-    "workingTreePatch": "Working tree patch"
+    "workingTreePatch": "Working tree patch",
+    "truncated": "Showing first {{shown}} of {{total}} lines (truncated)"
   },
   "branch": {
     "title": "Branch Manager",
@@ -136,6 +137,7 @@
     "drop": "Drop",
     "dropConfirm": "Drop stash entry #{{index}}?",
     "empty": "No stash entries.",
+    "entryLabel": "Stash #{{index}}",
     "entryCount": "{{count}} entries"
   },
   "geek": {
