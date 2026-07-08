@@ -156,6 +156,17 @@ export default function GitStatusPanel({ api, onFileSelect, onMessage, onRefresh
     }
   };
 
+  const removeUntracked = async (file) => {
+    if (!window.confirm(t('status.removeUntrackedConfirm', { file }))) return;
+    try {
+      await api.post('/clean', { files: [file] });
+      await syncAfterChange();
+      onMessage(t('feedback.removeUntrackedDone', { file }), 'success');
+    } catch (error) {
+      reportError(error);
+    }
+  };
+
   const stageAll = async () => {
     try {
       await api.post('/stage', { files: ['.'] });
@@ -316,7 +327,7 @@ export default function GitStatusPanel({ api, onFileSelect, onMessage, onRefresh
                     </button>
                   )}
                   {isUntracked && (
-                    <button className="btn btn-ghost workspace-icon-btn danger" onClick={(event) => { event.stopPropagation(); cleanUntracked(); }}>
+                    <button className="btn btn-ghost workspace-icon-btn danger" onClick={(event) => { event.stopPropagation(); removeUntracked(fileName); }}>
                       <Trash2 size={14} />
                     </button>
                   )}

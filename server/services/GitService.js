@@ -307,8 +307,20 @@ export class GitService {
     });
   }
 
-  static async clean(forceDirectories = true) {
-    return withGit((git) => git.raw(forceDirectories ? ['clean', '-fd'] : ['clean', '-f']));
+  static async clean(forceDirectories = true, files) {
+    return withGit((git) => {
+      // When specific paths are supplied, remove only those untracked paths.
+      // Otherwise fall back to cleaning all untracked files/dirs.
+      const targetFiles = Array.isArray(files)
+        ? files.filter(Boolean)
+        : files
+          ? [files]
+          : [];
+      if (targetFiles.length > 0) {
+        return git.raw(['clean', '-f', '--', ...targetFiles]);
+      }
+      return git.raw(forceDirectories ? ['clean', '-fd'] : ['clean', '-f']);
+    });
   }
 
   static async commit(message, options = {}) {
@@ -318,11 +330,12 @@ export class GitService {
       throw error;
     }
 
-    return withGit((git) =>
-      git.commit(message.trim(), undefined, {
-        '--amend': Boolean(options.amend),
-      }),
-    );
+    // simple-git treats `{ '--amend': false }` as a truthy option and appends
+    // `--amend` anyway, which would silently rewrite the previous commit on
+    // every normal commit. Only pass the flag when an amend is actually
+    // requested.
+    const commitOptions = options.amend ? { '--amend': true } : {};
+    return withGit((git) => git.commit(message.trim(), undefined, commitOptions));
   }
 
   static async checkout(branchOrFile) {
@@ -535,11 +548,16 @@ export class GitService {
       throw error;
     }
 
-    // Reject arguments that would read from /dev/stdin and hang the request,
-    // and block obviously destructive system-level flags. This is a best-effort
-    // guard, not a security boundary — the endpoint is intended for local use.
+    // Reject arguments that would read from stdin and hang the request. This
+    // is a best-effort guard, not a security boundary — the endpoint is
+    // intended for local use. Note that a bare `--` is just the standard
+    // option/path separator (e.g. `checkout -- file`, `diff -- file`) and is
+    // intentionally NOT blocked here; only genuine stdin-reading combos such
+    // as `commit -F -` are.
     const blocked = normalizedArgs.some(
-      (arg) => arg === '--' || arg.startsWith('-z') || arg === 'commit' && normalizedArgs.includes('-F') && normalizedArgs.includes('-'),
+      (arg) =>
+        (arg === '-F' || arg === '--file') &&
+        normalizedArgs.some((other) => other === '-'),
     );
     if (blocked) {
       const error = new Error('Unsupported argument combination');

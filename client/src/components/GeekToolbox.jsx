@@ -12,6 +12,64 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+// Minimal shell-like tokenizer: splits a command line on whitespace while
+// respecting single/double quotes so arguments containing spaces or quotes
+// survive intact. Examples:
+//   commit -m "fix bug"          -> ['commit', '-m', 'fix bug']
+//   log --since="2024-01-01"     -> ['log', '--since=2024-01-01']
+//   show 'HEAD~1'                -> ['show', 'HEAD~1']
+// Backslash escapes the next char inside double quotes; single quotes keep
+// everything literal until the closing single quote.
+function tokenizeCommand(input) {
+  const tokens = [];
+  let current = '';
+  let hasToken = false;
+  let quote = null; // null | '"' | "'"
+
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+
+    if (quote) {
+      if (quote === '"' && ch === '\\') {
+        // Inside double quotes, backslash escapes the next character.
+        const next = input[i + 1];
+        if (next !== undefined) {
+          current += next;
+          i += 1;
+          continue;
+        }
+      }
+      if (ch === quote) {
+        quote = null; // closing quote
+      } else {
+        current += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      hasToken = true; // an empty quoted string is still a token
+      continue;
+    }
+
+    if (/\s/.test(ch)) {
+      if (hasToken) {
+        tokens.push(current);
+        current = '';
+        hasToken = false;
+      }
+      continue;
+    }
+
+    current += ch;
+    hasToken = true;
+  }
+
+  if (hasToken) tokens.push(current);
+  return tokens;
+}
+
 function Section({ title, icon, count, defaultOpen = false, children }) {
   return (
     <details className="geek-section" open={defaultOpen}>
@@ -227,7 +285,7 @@ export default function GeekToolbox({ api, onMessage, onRefresh, branch, remoteC
   };
 
   const runCommand = async () => {
-    const args = commandInput.split(/\s+/).map((item) => item.trim()).filter(Boolean);
+    const args = tokenizeCommand(commandInput);
     if (args.length === 0) return;
     try {
       const { data } = await api.post('/run', { args });

@@ -154,7 +154,7 @@ router.post(
 router.post(
   '/clean',
   asyncHandler(async (req, res) => {
-    const response = await GitService.clean(req.body.forceDirectories !== false);
+    const response = await GitService.clean(req.body.forceDirectories !== false, req.body.files);
     res.json({ success: true, response });
   }),
 );
